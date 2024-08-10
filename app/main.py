@@ -101,8 +101,8 @@ def process_feed(feed):
 # Set config
 HASH_DIR = os.getenv('HASH_DIR', 'hashes')
 ARCHIVE_BOX_URL = os.getenv('ARCHIVEBOX_URL', "https://example.com")
-ARCHIVE_BOX_USER = os.getenv('ARCHIVEBOX_USER', "ab")
-ARCHIVE_BOX_USER = os.getenv('ARCHIVEBOX_PASSWORD', False)
+ARCHIVE_BOX_TOKEN = os.getenv('ARCHIVEBOX_TOKEN', False)
+
 DRY_RUN = os.getenv('DRY_RUN', "N").upper()
 TRACKING_MODE = os.getenv('TRACKING_MODE', "LASTPAGE").upper()
 MAX_ENTRIES = int(os.getenv('MAX_ENTRIES', 0))

@@ -8,6 +8,45 @@ import time
 from lxml import etree
 
 
+def submit_to_linkwarden(link):
+    ''' Submit a link to LinkWarden via its API
+    '''
+    
+    # Build the data to submit
+    data =  {
+        "name" : "",
+        "url": link,
+        "description" : "",
+        "type" : "url",
+        "tags": [],
+        "preview":"",
+        "image":"",
+        "pdf":"",
+        "readable":"",
+        "monolith":"",
+        "textContent":"",
+        "collection": {
+            "id":2,
+            "name":"Site Links",
+            "ownerId":1
+        }
+    }        
+        
+    for tag in LINKWARDEN_TAGS:
+        data["tags"].append({"name":tag})
+    
+    headers = {
+        "Authorization" : f"Bearer {LINKWARDEN_TOKEN}"
+        }
+    
+    r = SESSION.post(
+        f"{LINKWARDEN_URL}/api/v1/links", 
+        headers=headers,
+        json=data
+        )
+    
+    return r.status_code == 200
+
 def extract_page_urls(url, xpath_filter):
     ''' Extract URLs from a page
     '''
@@ -114,6 +153,13 @@ def process_feed(feed):
         print(f"seen {entry.link}")
         links = extract_page_urls(entry.link, feed['XPATH_FILTER'])
         
+        
+        
+        for link in links:
+            if not submit_to_linkwarden(link):
+                print(f"Err, failed to submit {link}")
+                
+        
         '''
         # We're not doing multi-submission for now
         url_list = "\r\n".join(links)
@@ -151,12 +197,9 @@ def process_feed(feed):
 
 # Set config
 HASH_DIR = os.getenv('HASH_DIR', 'hashes')
-ARCHIVE_BOX_URL = os.getenv('ARCHIVEBOX_URL', "https://example.com")
-
-# This isn't currently used, see utilities/auto-blog-link-preserver#5
-ARCHIVE_BOX_TOKEN = os.getenv('ARCHIVEBOX_TOKEN', False)
-
-REQUESTS_TIMEOUT = int(os.getenv('REQUESTS_TIMEOUT', 2))
+LINKWARDEN_URL = os.getenv('LINKWARDEN_URL', "https://example.com")
+LINKWARDEN_TOKEN = os.getenv('LINKWARDEN_TOKEN', False)
+LINKWARDEN_TAGS = os.getenv('LINKWARDEN_TAGS' , "SiteLinks").split(",")
 
 DRY_RUN = os.getenv('DRY_RUN', "N").upper()
 MAX_ENTRIES = int(os.getenv('MAX_ENTRIES', 0))

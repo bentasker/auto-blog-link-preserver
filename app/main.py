@@ -31,8 +31,12 @@ def archivebox_scrap_add_url(url):
         "depth": 0
         }
     
-    r = SESSION.post(f"{ARCHIVE_BOX_URL}/add/", data=data)
-    return r
+    try:
+        r = SESSION.post(f"{ARCHIVE_BOX_URL}/add/", data=data, timeout=REQUESTS_TIMEOUT)
+        return (r.status_code == "200")
+    except requests.exceptions.ReadTimeout:
+        print("Submission timed out")
+        return False
 
 
 def extract_page_urls(url, xpath_filter):
@@ -148,7 +152,14 @@ def process_feed(feed):
         print(f"seen {en}")
         links = extract_page_urls(entry.link, feed['XPATH_FILTER'])
         
-        print(links)
+        
+        url_list = "\r\n".join(links)
+        print(url_list)
+        
+        # Submit to archive box 
+        if not archivebox_scrap_add_url(url_list):
+            print(f"Err, failed {entry.link}")
+            continue
         
         # TODO: rempve this
         # This is only here to allow easy testing during dev
@@ -169,7 +180,11 @@ def process_feed(feed):
 # Set config
 HASH_DIR = os.getenv('HASH_DIR', 'hashes')
 ARCHIVE_BOX_URL = os.getenv('ARCHIVEBOX_URL', "https://example.com")
+
+# This isn't currently used, see utilities/auto-blog-link-preserver#5
 ARCHIVE_BOX_TOKEN = os.getenv('ARCHIVEBOX_TOKEN', False)
+
+REQUESTS_TIMEOUT = int(os.getenv('REQUESTS_TIMEOUT', 10))
 
 DRY_RUN = os.getenv('DRY_RUN', "N").upper()
 MAX_ENTRIES = int(os.getenv('MAX_ENTRIES', 0))

@@ -106,9 +106,12 @@ def process_feed(feed):
     ''' Process the RSS feed and generate a toot for any entry we haven't yet seen
     '''
     
+    start = time.time_ns()
     storedhash = False
     hashtracker = False
     entry_count = 0
+    link_count = 0
+    failure_count = 0
     
     # This will be overridden as we iterate through
     firsthash = False
@@ -146,9 +149,11 @@ def process_feed(feed):
         #url_list = "\r\n".join(links)
         
         for link in links:
+            link_count += 1
             if not archivebox_scrap_add_url(link):
                 print(f"Err, failed to submit {link} for {entry.link}")
                 # Let archivebox catch up
+                failure_count += 1
                 time.sleep(20)
                 continue
             # Give archivebox a second to catch up
@@ -163,6 +168,13 @@ def process_feed(feed):
     if hashtracker:
         hashtracker.close()
 
+    return {
+        "feed_url" : feed['FEED_URL'],
+        "entries" : entry_count,
+        "links" : link_count,
+        "failed_submissions" : failure_count,
+        "runtime": time.time_ns() - start
+        }
 
 
 # Set config
@@ -192,6 +204,7 @@ print(r.status_code)
 
 
 # Iterate through feeds
+stats = []
 for feed in FEEDS:
     # Calculate the hashdir if not already set
     if "HASH_DIR" not in feed:
@@ -203,4 +216,7 @@ for feed in FEEDS:
     if not os.path.exists(feed['HASH_DIR']):
         os.makedirs(feed['HASH_DIR'])
     
-    process_feed(feed)
+    stats.append(process_feed(feed))
+
+
+print(stats)

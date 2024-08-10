@@ -35,7 +35,7 @@ def archivebox_scrap_add_url(url):
     return r
 
 
-def extract_page_urls(url):
+def extract_page_urls(url, xpath_filter):
     ''' Extract URLs from a page
     '''
     
@@ -49,7 +49,12 @@ def extract_page_urls(url):
     parser = etree.XMLParser(recover=True)
     root = etree.fromstring(r.text, parser=parser)
     
-    links = root.findall(".//a[@href]")
+
+    if not xpath_filter:
+        xpath_filter = ".//a[@href]"
+    
+    links = root.findall(xpath_filter)
+
     for link in links:
         dst = link.attrib["href"]
         # Skip relative links
@@ -141,7 +146,7 @@ def process_feed(feed):
 
         # TODO: actually do something with it
         print(f"seen {en}")
-        links = extract_page_urls(entry.link)
+        links = extract_page_urls(entry.link, feed['XPATH_FILTER'])
         
         print(links)
         
@@ -188,6 +193,9 @@ for feed in FEEDS:
     # Calculate the hashdir if not already set
     if "HASH_DIR" not in feed:
         feed['HASH_DIR'] = f"{HASH_DIR}/{feed['FEED_URL'].replace('/','-').replace('.','-')}.urls"
+
+    if "XPATH_FILTER" not in feed:
+        feed['XPATH_FILTER'] = False
 
     if not os.path.exists(feed['HASH_DIR']):
         os.makedirs(feed['HASH_DIR'])

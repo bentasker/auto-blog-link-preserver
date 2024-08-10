@@ -1,6 +1,7 @@
-[
-{
-  "FEED_URL" : "https://www.bentasker.co.uk/rss.xml"
+
+[ {
+  "FEED_URL" : "https://www.bentasker.co.uk/rss.xml",
+  "XPATH_FILTER" : ".//div[@itemprop='articleBody text']//div//p/a[@href]"
 }
 ]
 

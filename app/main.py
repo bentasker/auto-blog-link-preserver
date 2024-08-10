@@ -185,29 +185,9 @@ def process_feed(feed):
         print(f"seen {entry.link}")
         links = extract_page_urls(entry.link, feed['XPATH_FILTER'])
         
-        
-        
         for link in links:
             if not submit_to_linkwarden(link):
                 print(f"Err, failed to submit {link}")
-                
-        
-        '''
-        # We're not doing multi-submission for now
-        url_list = "\r\n".join(links)
-        
-        if not archivebox_scrap_add_url(url_list):
-            print(f"Err, failed to submit links for {entry.link}")
-            # Let archivebox catch up
-            failure_count += 1
-            time.sleep(20)
-            continue
-        
-        
-        # Give archivebox a second to catch up
-        time.sleep(10)
-        '''
-        
         
         write_hash_to_storage(linkhash, feed, hashtracker, firsthash)
 
@@ -233,12 +213,7 @@ LINKWARDEN_URL = os.getenv('LINKWARDEN_URL', "https://example.com")
 LINKWARDEN_TOKEN = os.getenv('LINKWARDEN_TOKEN', False)
 LINKWARDEN_TAGS = os.getenv('LINKWARDEN_TAGS' , "SiteLinks").split(",")
 LINKWARDEN_COLLECTION_NAME = os.getenv('LINKWARDEN_COLLECTION_NAME' , False)
-
-
-
-DRY_RUN = os.getenv('DRY_RUN', "N").upper()
 MAX_ENTRIES = int(os.getenv('MAX_ENTRIES', 0))
-
 
 with open("feeds.json", "r") as fh:
     FEEDS = json.load(fh)
@@ -248,13 +223,6 @@ SESSION = requests.session()
 
 # This is used as a cache and will be updated later
 LINKWARDEN_COLLECTION = [False, False]
-
-'''
-url = "https://www.bentasker.co.uk/posts/blog/house-stuff/ecover-dishwasher-tablets-left-white-grit-over-everything.html"
-r = archivebox_scrap_add_url(url)
-print(r.status_code)
-'''
-
 
 # Iterate through feeds
 stats = []
@@ -270,6 +238,5 @@ for feed in FEEDS:
         os.makedirs(feed['HASH_DIR'])
     
     stats.append(process_feed(feed))
-
 
 print(stats)

@@ -32,11 +32,24 @@ def archivebox_scrap_add_url(url):
         }
     
     try:
-        r = SESSION.post(f"{ARCHIVE_BOX_URL}/add/", data=data, timeout=REQUESTS_TIMEOUT)
+        r = SESSION.post(
+            f"{ARCHIVE_BOX_URL}/add/", 
+            data=data, 
+            timeout=REQUESTS_TIMEOUT,
+            allow_redirects=False
+            )
         return r.status_code == 200
     except requests.exceptions.ReadTimeout:
-        print("Submission timed out")
-        return False
+        # We hit the expected timeout
+        #
+        # When submitting through the Web UI, the code 
+        # doesn't wait for a response - because that seems
+        # to take forever (utilities/auto-blog-link-preserver#6)
+        #
+        # So, we should also treat a lack of response as success
+        #
+        # TODO: Figure out if there's a way we can validate success
+        return True
 
 
 def extract_page_urls(url, xpath_filter):
@@ -184,7 +197,7 @@ ARCHIVE_BOX_URL = os.getenv('ARCHIVEBOX_URL', "https://example.com")
 # This isn't currently used, see utilities/auto-blog-link-preserver#5
 ARCHIVE_BOX_TOKEN = os.getenv('ARCHIVEBOX_TOKEN', False)
 
-REQUESTS_TIMEOUT = int(os.getenv('REQUESTS_TIMEOUT', 10))
+REQUESTS_TIMEOUT = int(os.getenv('REQUESTS_TIMEOUT', 2))
 
 DRY_RUN = os.getenv('DRY_RUN', "N").upper()
 MAX_ENTRIES = int(os.getenv('MAX_ENTRIES', 0))

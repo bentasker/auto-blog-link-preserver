@@ -8,50 +8,6 @@ import time
 from lxml import etree
 
 
-def archivebox_scrape_add_csrf():
-    ''' Call the add page and extract the CSRF token
-    '''
-    r = SESSION.get(f"{ARCHIVE_BOX_URL}/add/")
-    parser = etree.XMLParser(recover=True)
-    root = etree.fromstring(r.text, parser=parser)
-    
-    form_item = root.find(".//input[@name='csrfmiddlewaretoken']")
-    return form_item.attrib["value"]
-
-
-def archivebox_scrap_add_url(url):
-    ''' Submit a URL to archivebox
-    '''
-    
-    data = {
-        "csrfmiddlewaretoken": archivebox_scrape_add_csrf(),
-        "url": url,
-        "parser": "auto",
-        "tag": "",
-        "depth": 0
-        }
-    
-    try:
-        r = SESSION.post(
-            f"{ARCHIVE_BOX_URL}/add/", 
-            data=data, 
-            timeout=REQUESTS_TIMEOUT,
-            allow_redirects=False
-            )
-        return r.status_code == 200
-    except requests.exceptions.ReadTimeout:
-        # We hit the expected timeout
-        #
-        # When submitting through the Web UI, the code 
-        # doesn't wait for a response - because that seems
-        # to take forever (utilities/auto-blog-link-preserver#6)
-        #
-        # So, we should also treat a lack of response as success
-        #
-        # TODO: Figure out if there's a way we can validate success
-        return True
-
-
 def extract_page_urls(url, xpath_filter):
     ''' Extract URLs from a page
     '''
@@ -158,6 +114,7 @@ def process_feed(feed):
         print(f"seen {entry.link}")
         links = extract_page_urls(entry.link, feed['XPATH_FILTER'])
         
+        '''
         # We're not doing multi-submission for now
         url_list = "\r\n".join(links)
         
@@ -168,9 +125,12 @@ def process_feed(feed):
             time.sleep(20)
             continue
         
+        
         # Give archivebox a second to catch up
         time.sleep(10)
-                
+        '''
+        
+        
         write_hash_to_storage(linkhash, feed, hashtracker, firsthash)
 
         # Increase the counter

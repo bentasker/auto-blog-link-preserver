@@ -7,7 +7,7 @@ import requests
 import time
 
 
-def check_if_link_seen(mode, linkhash, storedhash, feed):
+def check_if_link_seen(linkhash, storedhash, feed):
     ''' Check whether the current hashed URL has previously been seen
     Return: boolean
     '''
@@ -15,7 +15,7 @@ def check_if_link_seen(mode, linkhash, storedhash, feed):
     return os.path.exists(hashfile)
 
 
-def write_hash_to_storage(mode, linkhash, feed, hashtracker, firsthash):
+def write_hash_to_storage(linkhash, feed, hashtracker, firsthash):
     ''' Write the hash to statefile(s)
     '''
 
@@ -63,7 +63,7 @@ def process_feed(feed):
         linkhash = hashlib.sha1(entry.link.encode('utf-8')).hexdigest()
         print('{}: {}'.format(entry.link,linkhash))
         
-        if check_if_link_seen(TRACKING_MODE, linkhash, storedhash, feed):
+        if check_if_link_seen(linkhash, storedhash, feed):
             print("Reached last seen entry")
             break
                    
@@ -87,7 +87,7 @@ def process_feed(feed):
 
         # TODO: actually do something with it
         print(f"seen {en}")
-        write_hash_to_storage(TRACKING_MODE, linkhash, feed, hashtracker, firsthash)
+        write_hash_to_storage(linkhash, feed, hashtracker, firsthash)
 
         # Increase the counter
         entry_count += 1
@@ -104,7 +104,6 @@ ARCHIVE_BOX_URL = os.getenv('ARCHIVEBOX_URL', "https://example.com")
 ARCHIVE_BOX_TOKEN = os.getenv('ARCHIVEBOX_TOKEN', False)
 
 DRY_RUN = os.getenv('DRY_RUN', "N").upper()
-TRACKING_MODE = os.getenv('TRACKING_MODE', "LASTPAGE").upper()
 MAX_ENTRIES = int(os.getenv('MAX_ENTRIES', 0))
 
 

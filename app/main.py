@@ -159,18 +159,17 @@ def process_feed(feed):
         links = extract_page_urls(entry.link, feed['XPATH_FILTER'])
         
         # We're not doing multi-submission for now
-        #url_list = "\r\n".join(links)
+        url_list = "\r\n".join(links)
         
-        for link in links:
-            link_count += 1
-            if not archivebox_scrap_add_url(link):
-                print(f"Err, failed to submit {link} for {entry.link}")
-                # Let archivebox catch up
-                failure_count += 1
-                time.sleep(20)
-                continue
-            # Give archivebox a second to catch up
-            time.sleep(1)
+        if not archivebox_scrap_add_url(url_list):
+            print(f"Err, failed to submit links for {entry.link}")
+            # Let archivebox catch up
+            failure_count += 1
+            time.sleep(20)
+            continue
+        
+        # Give archivebox a second to catch up
+        time.sleep(10)
                 
         write_hash_to_storage(linkhash, feed, hashtracker, firsthash)
 

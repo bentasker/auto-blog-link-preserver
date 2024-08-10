@@ -19,12 +19,12 @@ def archivebox_scrape_add_csrf():
     return form_item.attrib["value"]
 
 
-def archivebox_scrap_add_url(csrf_token, url):
+def archivebox_scrap_add_url(url):
     ''' Submit a URL to archivebox
     '''
     
     data = {
-        "csrfmiddlewaretoken": csrf_token,
+        "csrfmiddlewaretoken": archivebox_scrape_add_csrf(),
         "url": url,
         "parser": "auto",
         "tag": "",
@@ -141,9 +141,9 @@ with open("feeds.json", "r") as fh:
 # We want to be able to use keep-alive if we're posting multiple things
 SESSION = requests.session()
 
-csrf_token = archivebox_scrape_add_csrf()
+
 url = "https://www.bentasker.co.uk/posts/blog/house-stuff/ecover-dishwasher-tablets-left-white-grit-over-everything.html"
-r = archivebox_scrap_add_url(csrf_token, url)
+r = archivebox_scrap_add_url(url)
 print(r.status_code)
 
 

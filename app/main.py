@@ -8,9 +8,45 @@ import time
 from lxml import etree
 
 
+def get_linkwarden_collection(name):
+    ''' Get details of a linkwarden collection
+    '''
+    headers = {
+            "Authorization" : f"Bearer {LINKWARDEN_TOKEN}"
+            }
+    
+    r = SESSION.get(
+            f"{LINKWARDEN_URL}/api/v1/collections", 
+            headers=headers
+        )    
+    
+    # Iterate through the response
+    j = r.json()
+    for c in j['response']:
+        if name == c['name']:
+            print("Found collection")
+            return {
+                "id" : c['id'],
+                "name" : c['name'],
+                "ownerId" : c['ownerId']
+                }
+    
+    # Otherwise, there was no match, return False
+    return False
+
+
 def submit_to_linkwarden(link):
     ''' Submit a link to LinkWarden via its API
     '''
+    
+    if not LINKWARDEN_COLLECTION[0]:
+        # We haven't tried to get collection details yet
+        LINKWARDEN_COLLECTION[0] = True
+        LINKWARDEN_COLLECTION[1] = get_linkwarden_collection(LINKWARDEN_COLLECTION_NAME)
+    
+    collection = {}
+    if LINKWARDEN_COLLECTION[1]:
+        collection = LINKWARDEN_COLLECTION[1]
     
     # Build the data to submit
     data =  {
@@ -25,13 +61,9 @@ def submit_to_linkwarden(link):
         "readable":"",
         "monolith":"",
         "textContent":"",
-        "collection": {
-            "id":2,
-            "name":"Site Links",
-            "ownerId":1
-        }
+        "collection": LINKWARDEN_COLLECTION[1]
     }        
-        
+    
     for tag in LINKWARDEN_TAGS:
         data["tags"].append({"name":tag})
     
@@ -200,6 +232,9 @@ HASH_DIR = os.getenv('HASH_DIR', 'hashes')
 LINKWARDEN_URL = os.getenv('LINKWARDEN_URL', "https://example.com")
 LINKWARDEN_TOKEN = os.getenv('LINKWARDEN_TOKEN', False)
 LINKWARDEN_TAGS = os.getenv('LINKWARDEN_TAGS' , "SiteLinks").split(",")
+LINKWARDEN_COLLECTION_NAME = os.getenv('LINKWARDEN_COLLECTION_NAME' , False)
+
+
 
 DRY_RUN = os.getenv('DRY_RUN', "N").upper()
 MAX_ENTRIES = int(os.getenv('MAX_ENTRIES', 0))
@@ -210,6 +245,9 @@ with open("feeds.json", "r") as fh:
 
 # We want to be able to use keep-alive if we're posting multiple things
 SESSION = requests.session()
+
+# This is used as a cache and will be updated later
+LINKWARDEN_COLLECTION = [False, False]
 
 '''
 url = "https://www.bentasker.co.uk/posts/blog/house-stuff/ecover-dishwasher-tablets-left-white-grit-over-everything.html"

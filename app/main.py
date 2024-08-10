@@ -152,6 +152,7 @@ def process_feed(feed):
     entry_count = 0
     link_count = 0
     failure_count = 0
+    submit_times = []
     
     # This will be overridden as we iterate through
     firsthash = False
@@ -186,8 +187,12 @@ def process_feed(feed):
         links = extract_page_urls(entry.link, feed['XPATH_FILTER'])
         
         for link in links:
+            link_count += 1
+            submit_start = time.time_ns()
             if not submit_to_linkwarden(link):
                 print(f"Err, failed to submit {link}")
+                failure_count += 1
+            submit_times.append(time.time_ns() - submit_start)
         
         write_hash_to_storage(linkhash, feed, hashtracker, firsthash)
 
@@ -198,13 +203,18 @@ def process_feed(feed):
     if hashtracker:
         hashtracker.close()
 
+    mean_submit_time = -100
+    if len(submit_times) > 0:
+        mean_submit_time = sum(submit_times) / len(submit_times)
+        
     return {
         "feed_url" : feed['FEED_URL'],
         "entries" : entry_count,
         "links" : link_count,
         "failed_submissions" : failure_count,
-        "runtime": time.time_ns() - start
-        }
+        "runtime": time.time_ns() - start,
+        "mean_submission_time": mean_submit_time 
+    }
 
 
 # Set config

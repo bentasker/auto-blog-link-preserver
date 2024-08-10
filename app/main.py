@@ -64,8 +64,12 @@ def extract_page_urls(url, xpath_filter):
         # Skip relative links
         if not dst.startswith("http://") and not dst.startswith("https://"):
             continue
-        if dst not in urls:
-            urls.append(dst)
+        
+        # Strip any url fragment
+        dst_s = dst.split("#")
+        
+        if dst_s[0] not in urls:
+            urls.append(dst[0])
 
     return urls
 

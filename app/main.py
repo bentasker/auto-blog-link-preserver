@@ -33,7 +33,7 @@ def archivebox_scrap_add_url(url):
     
     try:
         r = SESSION.post(f"{ARCHIVE_BOX_URL}/add/", data=data, timeout=REQUESTS_TIMEOUT)
-        return (r.status_code == "200")
+        return r.status_code == 200
     except requests.exceptions.ReadTimeout:
         print("Submission timed out")
         return False
@@ -69,7 +69,7 @@ def extract_page_urls(url, xpath_filter):
         dst_s = dst.split("#")
         
         if dst_s[0] not in urls:
-            urls.append(dst[0])
+            urls.append(dst_s[0])
 
     return urls
 
@@ -118,8 +118,7 @@ def process_feed(feed):
 
     # Iterate over entries
     for entry in d.entries:
-        
-        
+                
         # Have we hit the MAX_ENTRIES limit
         if MAX_ENTRIES > 0 and entry_count >= MAX_ENTRIES:
             print(f"Reached MAX_ENTRIES ({MAX_ENTRIES})")
@@ -133,43 +132,28 @@ def process_feed(feed):
         if check_if_link_seen(linkhash, storedhash, feed):
             print("Reached last seen entry")
             break
-                   
-        en = {}
-        en['title'] = entry.title
-        en['link'] = entry.link
-        en['author'] = False       
-        en['tags'] = []
-        
-        if hasattr(entry, "tags"):
-            # Iterate over tags and add them
-            [en['tags'].append(x['term']) for x in entry.tags]
-        
-        
-        #print(en)
 
         # Keep a record of the hash for the first item in the feed
         # misc/Python_mastodon_rss_bot#1
         if not firsthash:
             firsthash = linkhash
 
-        # TODO: actually do something with it
-        print(f"seen {en}")
+        # Extract links
+        print(f"seen {entry.link}")
         links = extract_page_urls(entry.link, feed['XPATH_FILTER'])
         
+        # We're not doing multi-submission for now
+        #url_list = "\r\n".join(links)
         
-        url_list = "\r\n".join(links)
-        print(url_list)
-        
-        # Submit to archive box 
-        if not archivebox_scrap_add_url(url_list):
-            print(f"Err, failed {entry.link}")
-            continue
-        
-        # TODO: rempve this
-        # This is only here to allow easy testing during dev
-        break
-        
-        
+        for link in links:
+            if not archivebox_scrap_add_url(link):
+                print(f"Err, failed to submit {link} for {entry.link}")
+                # Let archivebox catch up
+                time.sleep(20)
+                continue
+            # Give archivebox a second to catch up
+            time.sleep(1)
+                
         write_hash_to_storage(linkhash, feed, hashtracker, firsthash)
 
         # Increase the counter

@@ -35,6 +35,32 @@ def archivebox_scrap_add_url(url):
     return r
 
 
+def extract_page_urls(url):
+    ''' Extract URLs from a page
+    '''
+    
+    # The first is the easiest - the url to the page itself
+    urls = [url]
+    
+    # Fetch the page
+    r = SESSION.get(url)
+    
+    # Parse the page - be permissive about syntax errors etc 
+    parser = etree.XMLParser(recover=True)
+    root = etree.fromstring(r.text, parser=parser)
+    
+    links = root.findall(".//a[@href]")
+    for link in links:
+        dst = link.attrib["href"]
+        # Skip relative links
+        if not dst.startswith("http://") and not dst.startswith("https://"):
+            continue
+        if dst not in urls:
+            urls.append(dst)
+
+    return urls
+
+
 def check_if_link_seen(linkhash, storedhash, feed):
     ''' Check whether the current hashed URL has previously been seen
     Return: boolean
@@ -115,6 +141,15 @@ def process_feed(feed):
 
         # TODO: actually do something with it
         print(f"seen {en}")
+        links = extract_page_urls(entry.link)
+        
+        print(links)
+        
+        # TODO: rempve this
+        # This is only here to allow easy testing during dev
+        break
+        
+        
         write_hash_to_storage(linkhash, feed, hashtracker, firsthash)
 
         # Increase the counter
@@ -141,13 +176,12 @@ with open("feeds.json", "r") as fh:
 # We want to be able to use keep-alive if we're posting multiple things
 SESSION = requests.session()
 
-
+'''
 url = "https://www.bentasker.co.uk/posts/blog/house-stuff/ecover-dishwasher-tablets-left-white-grit-over-everything.html"
 r = archivebox_scrap_add_url(url)
 print(r.status_code)
+'''
 
-
-sys.exit()
 
 # Iterate through feeds
 for feed in FEEDS:

@@ -222,7 +222,7 @@ HASH_DIR = os.getenv('HASH_DIR', 'hashes')
 LINKWARDEN_URL = os.getenv('LINKWARDEN_URL', "https://example.com")
 LINKWARDEN_TOKEN = os.getenv('LINKWARDEN_TOKEN', False)
 LINKWARDEN_TAGS = os.getenv('LINKWARDEN_TAGS' , "SiteLinks").split(",")
-LINKWARDEN_COLLECTION_NAME = os.getenv('LINKWARDEN_COLLECTION_NAME' , False)
+LINKWARDEN_COLLECTION_NAME = os.getenv('LINKWARDEN_COLLECTION_NAME' , "Unorganized")
 MAX_ENTRIES = int(os.getenv('MAX_ENTRIES', 0))
 
 with open("feeds.json", "r") as fh:

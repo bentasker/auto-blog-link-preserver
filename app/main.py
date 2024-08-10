@@ -88,25 +88,9 @@ def send_toot(en):
 
 
 def check_if_link_seen(mode, linkhash, storedhash, feed):
-    ''' Check whether the current hashed URL has previously been seen/tooted
-    
-    The way this is checked depends on mode
-    
-    - PERURL: checks for a hashfile specific to the linked url
-    - PERFEED: checks the content of a feed specific hashfile (provided via storedhash)
-    
+    ''' Check whether the current hashed URL has previously been seen
     Return: boolean
     '''
-    
-    if mode != "PERURL":
-        # Per feed hashing
-        if storedhash == linkhash:
-            return True
-        else:
-            return False
-        
-    # Per-url hashing
-    #
     hashfile = f"{feed['HASH_DIR']}/{linkhash}"
     return os.path.exists(hashfile)
 
@@ -114,12 +98,16 @@ def check_if_link_seen(mode, linkhash, storedhash, feed):
 def write_hash_to_storage(mode, linkhash, feed, hashtracker, firsthash):
     ''' Write the hash to statefile(s)
     '''
-    if mode == "PERURL":
-        # For per-url tracking, switch out the tracker file handle
-        # and set firsthash to be the same as the linkhash
-        hashfile = f"{feed['HASH_DIR']}/{linkhash}"
-        hashtracker = open(hashfile,'w')
-        firsthash = linkhash
+
+    # We use per-url tracking, so switch out the tracker file handle
+    # and set firsthash to be the same as the linkhash
+    #
+    # TODO: Refactor away the need to do this, we don't do persite tracking
+    # anymore
+    #
+    hashfile = f"{feed['HASH_DIR']}/{linkhash}"
+    hashtracker = open(hashfile,'w')
+    firsthash = linkhash
         
     hashtracker.seek(0)
     hashtracker.truncate()
@@ -135,15 +123,6 @@ def process_feed(feed):
     hashtracker = False
     entry_count = 0
     
-    # If tracking is per-feed, open (or create) the feed tracking file
-    if TRACKING_MODE != "PERURL": 
-        if os.path.exists(feed['HASH_FILE']):
-            hashtracker = open(feed['HASH_FILE'],'r+')
-            storedhash = hashtracker.read()
-        else:
-            hashtracker = open(feed['HASH_FILE'],'w')
-            storedhash = ''
-
     # This will be overridden as we iterate through
     firsthash = False
 
@@ -204,38 +183,30 @@ def process_feed(feed):
         hashtracker.close()
 
 
-fh = open("feeds.json", "r")
-FEEDS = json.load(fh)
-fh.close()
 
-HASH_DIR = os.getenv('HASH_DIR', '')
-INCLUDE_AUTHOR = os.getenv('INCLUDE_AUTHOR', "True")
-
-# Posts with this tag will toot with a content warning
-CW_TAG = os.getenv('CW_TAG', "content-warning")
-
-MASTODON_URL = os.getenv('MASTODON_URL', "https://mastodon.social")
-MASTODON_TOKEN = os.getenv('MASTODON_TOKEN', "")
-MASTODON_VISIBILITY = os.getenv('MASTODON_VISIBILITY', 'public')
+# Set config
+HASH_DIR = os.getenv('HASH_DIR', 'hashes')
+ARCHIVE_BOX_URL = os.getenv('ARCHIVEBOX_URL', "https://example.com")
+ARCHIVE_BOX_USER = os.getenv('ARCHIVEBOX_USER', "ab")
+ARCHIVE_BOX_USER = os.getenv('ARCHIVEBOX_PASSWORD', False)
 DRY_RUN = os.getenv('DRY_RUN', "N").upper()
-SKIP_TAGS = os.getenv('SKIP_TAGS', "").lower().split(',')
 TRACKING_MODE = os.getenv('TRACKING_MODE', "LASTPAGE").upper()
 MAX_ENTRIES = int(os.getenv('MAX_ENTRIES', 0))
 
 
+with open("feeds.json", "r") as fh:
+    FEEDS = json.load(fh)
+
 # We want to be able to use keep-alive if we're posting multiple things
 SESSION = requests.session()
 
-
+# Iterate through feeds
 for feed in FEEDS:
-    feed['HASH_FILE'] = f"{HASH_DIR}/{hashlib.sha1(feed['FEED_URL'].encode('utf-8')).hexdigest()}"
-    
-    if TRACKING_MODE == "PERURL":
-        # If we're using perurl tracking, we write hasfiles into
-        # a feed specific directory
-        # ensure it exists
-        feed['HASH_DIR'] = f"{feed['HASH_FILE']}.urls"
-        if not os.path.exists(feed['HASH_DIR']):
-            os.makedirs(feed['HASH_DIR'])
+    # Calculate the hashdir if not already set
+    if "HASH_DIR" not in feed:
+        feed['HASH_DIR'] = f"{HASH_DIR}/{feed['FEED_URL'].replace("/","-").replace(".","-")}.urls"
+
+    if not os.path.exists(feed['HASH_DIR']):
+        os.makedirs(feed['HASH_DIR'])
     
     process_feed(feed)

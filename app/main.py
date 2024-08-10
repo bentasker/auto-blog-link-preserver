@@ -5,6 +5,34 @@ import hashlib
 import os
 import requests
 import time
+from lxml import etree
+
+
+def archivebox_scrape_add_csrf():
+    ''' Call the add page and extract the CSRF token
+    '''
+    r = SESSION.get(f"{ARCHIVE_BOX_URL}/add/")
+    parser = etree.XMLParser(recover=True)
+    root = etree.fromstring(r.text, parser=parser)
+    
+    form_item = root.find(".//input[@name='csrfmiddlewaretoken']")
+    return form_item.attrib["value"]
+
+
+def archivebox_scrap_add_url(csrf_token, url):
+    ''' Submit a URL to archivebox
+    '''
+    
+    data = {
+        "csrfmiddlewaretoken": csrf_token,
+        "url": url,
+        "parser": "auto",
+        "tag": "",
+        "depth": 0
+        }
+    
+    r = SESSION.post(f"{ARCHIVE_BOX_URL}/add/", data=data)
+    return r
 
 
 def check_if_link_seen(linkhash, storedhash, feed):
@@ -112,6 +140,14 @@ with open("feeds.json", "r") as fh:
 
 # We want to be able to use keep-alive if we're posting multiple things
 SESSION = requests.session()
+
+csrf_token = archivebox_scrape_add_csrf()
+url = "https://www.bentasker.co.uk/posts/blog/house-stuff/ecover-dishwasher-tablets-left-white-grit-over-everything.html"
+r = archivebox_scrap_add_url(csrf_token, url)
+print(r.status_code)
+
+
+sys.exit()
 
 # Iterate through feeds
 for feed in FEEDS:

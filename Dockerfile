@@ -1,6 +1,7 @@
 FROM python
 
-RUN pip install feedparser requests lxml \
+COPY requirements.txt /requirements.txt
+RUN pip install -r requirements.txt \
     && mkdir /app \
     && mkdir /hashdir \
     && useradd rssfeed \

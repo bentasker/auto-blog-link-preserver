@@ -76,7 +76,7 @@ docker run \
 -e LINKWARDEN_COLLECTION_NAME="Site Links" \
 -e INFLUXDB_URL=http://192.168.3.84:8086 \
 -e INFLUXDB_BUCKET=testing_db \
-<image name>
+ghcr.io/bentasker/auto-blog-link-preserver:0.1
 
 ```
 

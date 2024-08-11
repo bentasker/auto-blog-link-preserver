@@ -234,13 +234,14 @@ def process_feed(feed):
 
 # Set config
 HASH_DIR = os.getenv('HASH_DIR', 'hashes')
+FEEDS_FILE = os.getenv('FEEDS_FILE', 'feeds.json')
 LINKWARDEN_URL = os.getenv('LINKWARDEN_URL', "https://example.com")
 LINKWARDEN_TOKEN = os.getenv('LINKWARDEN_TOKEN', False)
 LINKWARDEN_TAGS = os.getenv('LINKWARDEN_TAGS' , "SiteLinks").split(",")
 LINKWARDEN_COLLECTION_NAME = os.getenv('LINKWARDEN_COLLECTION_NAME' , "Unorganized")
 MAX_ENTRIES = int(os.getenv('MAX_ENTRIES', 0))
 
-with open("feeds.json", "r") as fh:
+with open(FEEDS_FILE, "r") as fh:
     FEEDS = json.load(fh)
 
 # We want to be able to use keep-alive if we're posting multiple things

@@ -296,6 +296,9 @@ def writeStats(statslist):
         lp_p2 = ",".join(fields)
         lp_buf.append(" ".join([lp_p1, lp_p2, ts]))
     
+    # Append a point to mark the completion
+    lp_buf.append(f"{INFLUXDB_MEASUREMENT},level=cronjob completions=1 {time.time_ns()}")
+    
     # Turn the buffer into one newline seperated text
     data = '\n'.join(lp_buf)
     

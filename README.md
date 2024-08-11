@@ -5,6 +5,8 @@ This script is intended as a way to help mitigate the risk of [link rot](https:/
 It consumes a site's RSS feed in order to fetch posts, extract outgoing links from them and submit all into [LinkWarden](https://github.com/linkwarden/linkwarden)
 
 
+Project management can be found [in my github mirror](https://projects.bentasker.co.uk/gils_projects/project/utilities/auto-blog-link-preserver.html).
+
 ----
 
 ## Environment Vars

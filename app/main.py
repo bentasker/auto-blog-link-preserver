@@ -35,7 +35,7 @@ def get_linkwarden_collection(name):
     return False
 
 
-def submit_to_linkwarden(link):
+def submit_to_linkwarden(link, tags = []):
     ''' Submit a link to LinkWarden via its API
     '''
     
@@ -67,6 +67,10 @@ def submit_to_linkwarden(link):
     for tag in LINKWARDEN_TAGS:
         data["tags"].append({"name":tag})
     
+    # Add any that were supplied when calling us
+    for tag in tags:
+        data["tags"].append({"name":tag})
+    
     headers = {
         "Authorization" : f"Bearer {LINKWARDEN_TOKEN}"
         }
@@ -82,9 +86,7 @@ def submit_to_linkwarden(link):
 def extract_page_urls(url, xpath_filter):
     ''' Extract URLs from a page
     '''
-    
-    # The first is the easiest - the url to the page itself
-    urls = [url]
+    urls = []
     
     # Fetch the page
     r = SESSION.get(url)
@@ -184,8 +186,21 @@ def process_feed(feed):
 
         # Extract links
         print(f"seen {entry.link}")
+
+        
+        # Grab any tags associated with the page
+        tags = []
+        if hasattr(entry, "tags"):
+            # Iterate over tags and add them
+            [tags.append(x['term']) for x in entry.tags]
+        
+        # Grab outgoing links from the page
         links = extract_page_urls(entry.link, feed['XPATH_FILTER'])
         
+        # Submit the link itself to linkwarden
+        submit_to_linkwarden(entry.link, tags)
+        
+        # Submit the outgoing links
         for link in links:
             link_count += 1
             submit_start = time.time_ns()

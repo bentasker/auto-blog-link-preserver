@@ -80,6 +80,23 @@ docker run \
 
 ```
 
+There's also [an example](examples/anti-link-rot.yml) of creating a K8S cronjob (see [#13](https://projects.bentasker.co.uk/gils_projects/issue/utilities/auto-blog-link-preserver/13.html) for details on creating the secrets).
+
+----
+
+## Use as a module
+
+Although not the primary use-case, it's also possible to import the script as module in order to use it's functionality for a list of URLs **not** sourced from a RSS feed.
+
+[`examples/crawl_and_preserve.py`](examples/crawl_and_preserve.py) is an example of this. It [searches for](https://www.bentasker.co.uk/posts/blog/software-development/building-a-self-hosted-url-and-tags-search-engine.html) all posts on `www.bentasker.co.uk` and then iterates through [the results](https://filesearch.bentasker.co.uk/?q=%2Fposts%2F+%2Fpages%2F+matchtype%3Aurl+mode%3Aor+domain%3Awww.bentasker.co.uk+ext%3Ahtml+-%3F&t=) preserving each post and any URL linked out to from within those posts.
+
+The functions that you need to be aware of are 
+
+* `extract_page_urls(url, xpath_filter)`: consume a HTML page and extract any links found under the path specified in `xpath_filter`
+* `submit_to_linkwarden(url, tags)`: submit a URL to linkwarden, attaching any tags included in the list `tags`
+
+
+
 ----
 
 ### Copyright

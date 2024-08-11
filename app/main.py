@@ -112,6 +112,10 @@ def extract_page_urls(url, xpath_filter):
     # Fetch the page
     r = SESSION.get(url)
     
+    if "content-type" not in r.headers or "text/html" not in r.headers['content-type']:
+        print(f"Skipping non HTML Page {url}")
+        return urls
+    
     # Parse the page - be permissive about syntax errors etc 
     parser = etree.XMLParser(recover=True)
     root = etree.fromstring(r.text, parser=parser)

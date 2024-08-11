@@ -357,17 +357,15 @@ LINKWARDEN_TAGS = os.getenv('LINKWARDEN_TAGS' , "SiteLinks").split(",")
 LINKWARDEN_COLLECTION_NAME = os.getenv('LINKWARDEN_COLLECTION_NAME' , "Unorganized")
 MAX_ENTRIES = int(os.getenv('MAX_ENTRIES', 0))
 
+# This is used as a cache and will be updated later
+LINKWARDEN_COLLECTION = [False, False]
+# We want to be able to use keep-alive if we're posting multiple things
+SESSION = requests.session()
 
 if __name__ == '__main__':
     
     with open(FEEDS_FILE, "r") as fh:
         FEEDS = json.load(fh)
-
-    # We want to be able to use keep-alive if we're posting multiple things
-    SESSION = requests.session()
-
-    # This is used as a cache and will be updated later
-    LINKWARDEN_COLLECTION = [False, False]
 
     # Iterate through feeds
     stats = []

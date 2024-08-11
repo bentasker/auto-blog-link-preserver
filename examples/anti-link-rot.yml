@@ -1,0 +1,105 @@
+# Example K8s Manifest
+#
+# You'll need to precreate some secrets. 
+# See https://projects.bentasker.co.uk/gils_projects/issue/utilities/auto-blog-link-preserver/13.html
+# for details
+#
+# To use this, there are a number of changes you'll need to make below
+#
+# * Volume hashdir: currently configured to be backed by my NFS server
+# * image: update to use the latest tagged image in the registry
+# * Linkwarden url: Update to use secret or appropriate service name
+# * config map anti-linkrot-cm: update to contain the feeds you wish to monitor
+# 
+#
+
+---
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: anti-link-rot
+spec:
+  schedule: "0 */2 * * *"
+  failedJobsHistoryLimit: 5
+  successfulJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+        template:
+            spec:
+                restartPolicy: Never
+                volumes:
+                - name: hashdir
+                  nfs:
+                    server: 192.168.5.212
+                    path: "/volume1/kubernetes_misc_mounts"
+                    readOnly: false
+                - name: feedsconfig
+                  configMap:
+                    name: anti-linkrot-cm
+                containers:
+                - name: anti-link-rot
+                  image: ghcr.io/bentasker/auto-blog-link-preserver:0.1
+                  imagePullPolicy: IfNotPresent
+                  volumeMounts:
+                    - mountPath: /hashes
+                      name: hashdir
+                      subPath: "linkwarden/linkrot-rss-feeds"
+                      readOnly: false
+                    - mountPath: /app/feeds.json
+                      name: feedsconfig
+                      subPath: "feeds.json"
+                      readOnly: true
+                  env:
+                  # Linkwarden is runninng in the same cluster
+                  # so ignore the public url in the secret and use the
+                  # service name
+                  - name: "LINKWARDEN_URL"
+                    value: "http://linkwarden.linkwarden.svc.cluster.local:8085"
+                  #  valueFrom: 
+                  #      secretKeyRef:
+                  #          name: linkwarden-info
+                  #          key: url
+                  - name: "LINKWARDEN_TOKEN"
+                    valueFrom:
+                        secretKeyRef:
+                            name: linkwarden-info
+                            key: token
+                  - name: "LINKWARDEN_COLLECTION_NAME"
+                    value: "Site Links"
+                  - name: "LINKWARDEN_TAGS"
+                    value: "SiteLinks,anti-link-rot"
+                  - name: "INFLUXDB_URL"
+                    valueFrom:
+                        secretKeyRef:
+                            name: influxdbv2
+                            key: influxdb_url
+                            optional: true
+                  - name: "INFLUXDB_TOKEN"
+                    valueFrom:
+                        secretKeyRef:
+                            name: influxdbv2
+                            key: influxdb_token
+                            optional: true
+                  - name: "INFLUXDB_ORG"
+                    valueFrom:
+                        secretKeyRef:
+                            name: influxdbv2
+                            key: influxdb_org
+                            optional: true
+                  - name: "INFLUXDB_BUCKET"
+                    value: "testingdb"
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: anti-linkrot-cm
+data:
+  feeds.json: |
+    [
+        {
+            "FEED_URL" : "https://www.bentasker.co.uk/rss.xml",
+            "XPATH_FILTER" : ".//div[@itemprop='articleBody text']//div//p/a[@href]"
+        }
+    ]

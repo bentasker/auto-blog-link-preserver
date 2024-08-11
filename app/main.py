@@ -302,6 +302,10 @@ def writeStats(statslist):
     if INFLUXDB_TOKEN:
         headers["Authorization"] = f"Token {INFLUXDB_URL}"
 
+    org = ""
+    if INFLUXDB_ORG:
+        org = f"&org={INFLUXDB_ORG}"
+
     # Construct the LP
     lp_buf = []
     ts = str(time.time_ns())
@@ -325,7 +329,7 @@ def writeStats(statslist):
     try:
         # Submit
         r = SESSION.post(
-            f"{INFLUXDB_URL}/api/v2/write?bucket={INFLUXDB_BUCKET}",
+            f"{INFLUXDB_URL}/api/v2/write?bucket={INFLUXDB_BUCKET}{org}",
             data = data,
             headers = headers,
             timeout = 10
@@ -344,6 +348,7 @@ HASH_DIR = os.getenv('HASH_DIR', 'hashes')
 INFLUXDB_URL = os.getenv('INFLUXDB_URL', False)
 INFLUXDB_TOKEN = os.getenv('INFLUXDB_TOKEN', False)
 INFLUXDB_BUCKET = os.getenv('INFLUXDB_BUCKET', False)
+INFLUXDB_ORG = os.getenv('INFLUXDB_ORG', False)
 INFLUXDB_MEASUREMENT = os.getenv('INFLUXDB_MEASUREMENT', 'anti_link_rot')
 FEEDS_FILE = os.getenv('FEEDS_FILE', 'feeds.json')
 LINKWARDEN_URL = os.getenv('LINKWARDEN_URL', "https://example.com")

@@ -42,7 +42,7 @@ spec:
                   image: ghcr.io/bentasker/auto-blog-link-preserver:0.1
                   imagePullPolicy: IfNotPresent
                   volumeMounts:
-                    - mountPath: /hashes
+                    - mountPath: /hashdir
                       name: hashdir
                       subPath: "linkwarden/linkrot-rss-feeds"
                       readOnly: false

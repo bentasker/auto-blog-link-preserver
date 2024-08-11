@@ -1,10 +1,10 @@
-FROM python
+FROM python:alpine
 
 COPY requirements.txt /requirements.txt
 RUN pip install -r requirements.txt \
     && mkdir /app \
     && mkdir /hashdir \
-    && useradd rssfeed \
+    && adduser -D rssfeed \
     && chown -R rssfeed /hashdir
 
 ENV PYTHONUNBUFFERED 1

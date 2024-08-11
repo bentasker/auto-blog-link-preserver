@@ -78,7 +78,13 @@ docker run \
 
 ```
 
+----
 
+### Copyright
+
+Copyright (c) 2024 [Ben Tasker](https://www.bentasker.co.uk)
+
+Released under [MIT License](https://www.bentasker.co.uk/pages/licenses/mit-license.html)
 
 
 

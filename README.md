@@ -28,6 +28,8 @@ Then provide the following
 * `LINKWARDEN_COLLECTION_NAME`: The name of the collection to put links into (default is `Unorganized`)
 * `LINKWARDEN_TAGS`: a comma separated list of tags to attach to links (default is `SiteLinks`)
 
+Note: if the provided collection name is not valid, links will be put into the `Unorganized` collection.
+
 
 ### InfluxDB Config
 

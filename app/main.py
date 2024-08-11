@@ -37,6 +37,13 @@ def get_linkwarden_collection(name):
 
 def submit_to_linkwarden(link, tags = []):
     ''' Submit a link to LinkWarden via its API
+    
+    Returns an integer indicating status:
+    
+      0 - submission failed
+      1 - submission succeeded
+      2 - LinkWarden reported it was a duplicate link
+    
     '''
     
     if not LINKWARDEN_COLLECTION[0]:
@@ -81,8 +88,22 @@ def submit_to_linkwarden(link, tags = []):
         json=data
         )
     
-    return r.status_code == 200
-
+    # utilities/auto-blog-link-preserver#11
+    #
+    # There are two forms of success
+    #
+    # HTTP 200: the link was added (yay!)
+    # HTTP 409: the link already existed, so LinkWarden prevented duplication
+    #
+    # Although 409 is a success, we want to make sure the caller knows the difference
+    retcode = 0
+    if r.status_code == 200:
+        retcode = 1
+    elif r.status_code == 409:
+        retcode = 2
+        
+    return retcode
+        
 def extract_page_urls(url, xpath_filter):
     ''' Extract URLs from a page
     '''
@@ -154,6 +175,7 @@ def process_feed(feed):
     entry_count = 0
     link_count = 0
     failure_count = 0
+    duplicate_count = 0
     submit_times = []
     
     # This will be overridden as we iterate through
@@ -198,15 +220,24 @@ def process_feed(feed):
         links = extract_page_urls(entry.link, feed['XPATH_FILTER'])
         
         # Submit the link itself to linkwarden
-        submit_to_linkwarden(entry.link, tags)
+        page_status = submit_to_linkwarden(entry.link, tags)
+        # TODO: DRY this up
+        if page_status == 0:
+            failure_count += 1
+        elif page_status == 2:
+            duplicate_count += 1
         
         # Submit the outgoing links
         for link in links:
             link_count += 1
             submit_start = time.time_ns()
-            if not submit_to_linkwarden(link):
+            retcode = submit_to_linkwarden(link)
+            if retcode == 0:
                 print(f"Err, failed to submit {link}")
                 failure_count += 1
+            elif retcode == 2:
+                duplicate_count += 1
+                
             submit_times.append(time.time_ns() - submit_start)
         
         write_hash_to_storage(linkhash, feed, hashtracker, firsthash)
@@ -226,6 +257,7 @@ def process_feed(feed):
         "feed_url" : feed['FEED_URL'],
         "entries" : entry_count,
         "links" : link_count,
+        "duplicates" : duplicate_count,
         "failed_submissions" : failure_count,
         "runtime": time.time_ns() - start,
         "mean_submission_time": mean_submit_time 

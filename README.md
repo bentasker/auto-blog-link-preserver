@@ -72,7 +72,7 @@ docker run \
 --rm \
 -v "$PWD/feeds.json":/app/feeds.json \
 -v "$PWD/hashes":/hashdir \
--e LINKWARDEN_URL="https://linkwarden.83n.uk" \
+-e LINKWARDEN_URL="https://linkwarden.example.com" \
 -e LINKWARDEN_TOKEN="$LINKWARDEN_TOKEN" \
 -e LINKWARDEN_TAGS="SiteLinks,anti-link-rot" \
 -e LINKWARDEN_COLLECTION_NAME="Site Links" \

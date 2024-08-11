@@ -300,7 +300,7 @@ def writeStats(statslist):
     
     headers = {}
     if INFLUXDB_TOKEN:
-        headers["Authorization"] = f"Token {INFLUXDB_URL}"
+        headers["Authorization"] = f"Token {INFLUXDB_TOKEN}"
 
     org = ""
     if INFLUXDB_ORG:

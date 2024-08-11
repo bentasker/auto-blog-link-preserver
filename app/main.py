@@ -259,17 +259,69 @@ def process_feed(feed):
         
     return {
         "feed_url" : feed['FEED_URL'],
-        "entries" : entry_count,
-        "links" : link_count,
-        "duplicates" : duplicate_count,
-        "failed_submissions" : failure_count,
-        "runtime": time.time_ns() - start,
+        "stats" : {
+            "entries" : entry_count,
+            "links" : link_count,
+            "duplicates" : duplicate_count,
+            "failed_submissions" : failure_count,
+            "runtime": time.time_ns() - start,
+        },
         "mean_submission_time": mean_submit_time 
     }
 
 
+def writeStats(statslist):
+    ''' Convert the stats list into line protocol and write into InfluxDB    
+    '''
+    
+    if not INFLUXDB_URL or not INFLUXDB_BUCKET:
+        # no-op
+        return
+    
+    headers = {}
+    if INFLUXDB_TOKEN:
+        headers["Authorization"] = f"Token {INFLUXDB_URL}"
+
+    # Construct the LP
+    lp_buf = []
+    ts = str(time.time_ns())
+    for stat in statslist:
+        lp_p1 = f"{INFLUXDB_MEASUREMENT},feed_url={stat['feed_url']}"
+        
+        fields = []
+        for f in stat['stats']:
+            fields.append(f"{f}={stat['stats'][f]}i")
+        
+        fields.append(f"mean_submission_time={stat['mean_submission_time']}")
+        lp_p2 = ",".join(fields)
+        lp_buf.append(" ".join([lp_p1, lp_p2, ts]))
+    
+    # Turn the buffer into one newline seperated text
+    data = '\n'.join(lp_buf)
+    
+    try:
+        # Submit
+        r = SESSION.post(
+            f"{INFLUXDB_URL}/api/v2/write?bucket={INFLUXDB_BUCKET}",
+            data = data,
+            headers = headers,
+            timeout = 10
+            )
+        
+        if r.status_code == 204:
+            print("Successfully submitted stats")
+        else:
+            print("Stats submission failed")
+    except:
+        print("Stats submission failed")
+
+
 # Set config
 HASH_DIR = os.getenv('HASH_DIR', 'hashes')
+INFLUXDB_URL = os.getenv('INFLUXDB_URL', False)
+INFLUXDB_TOKEN = os.getenv('INFLUXDB_TOKEN', False)
+INFLUXDB_BUCKET = os.getenv('INFLUXDB_BUCKET', False)
+INFLUXDB_MEASUREMENT = os.getenv('INFLUXDB_MEASUREMENT', 'anti_link_rot')
 FEEDS_FILE = os.getenv('FEEDS_FILE', 'feeds.json')
 LINKWARDEN_URL = os.getenv('LINKWARDEN_URL', "https://example.com")
 LINKWARDEN_TOKEN = os.getenv('LINKWARDEN_TOKEN', False)
@@ -302,3 +354,4 @@ for feed in FEEDS:
     stats.append(process_feed(feed))
 
 print(stats)
+writeStats(stats)

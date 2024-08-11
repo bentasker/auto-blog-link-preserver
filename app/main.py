@@ -352,29 +352,32 @@ LINKWARDEN_TAGS = os.getenv('LINKWARDEN_TAGS' , "SiteLinks").split(",")
 LINKWARDEN_COLLECTION_NAME = os.getenv('LINKWARDEN_COLLECTION_NAME' , "Unorganized")
 MAX_ENTRIES = int(os.getenv('MAX_ENTRIES', 0))
 
-with open(FEEDS_FILE, "r") as fh:
-    FEEDS = json.load(fh)
 
-# We want to be able to use keep-alive if we're posting multiple things
-SESSION = requests.session()
-
-# This is used as a cache and will be updated later
-LINKWARDEN_COLLECTION = [False, False]
-
-# Iterate through feeds
-stats = []
-for feed in FEEDS:
-    # Calculate the hashdir if not already set
-    if "HASH_DIR" not in feed:
-        feed['HASH_DIR'] = f"{HASH_DIR}/{feed['FEED_URL'].replace('/','-').replace('.','-')}.urls"
-
-    if "XPATH_FILTER" not in feed:
-        feed['XPATH_FILTER'] = False
-
-    if not os.path.exists(feed['HASH_DIR']):
-        os.makedirs(feed['HASH_DIR'])
+if __name__ == '__main__':
     
-    stats.append(process_feed(feed))
+    with open(FEEDS_FILE, "r") as fh:
+        FEEDS = json.load(fh)
 
-print(stats)
-writeStats(stats)
+    # We want to be able to use keep-alive if we're posting multiple things
+    SESSION = requests.session()
+
+    # This is used as a cache and will be updated later
+    LINKWARDEN_COLLECTION = [False, False]
+
+    # Iterate through feeds
+    stats = []
+    for feed in FEEDS:
+        # Calculate the hashdir if not already set
+        if "HASH_DIR" not in feed:
+            feed['HASH_DIR'] = f"{HASH_DIR}/{feed['FEED_URL'].replace('/','-').replace('.','-')}.urls"
+
+        if "XPATH_FILTER" not in feed:
+            feed['XPATH_FILTER'] = False
+
+        if not os.path.exists(feed['HASH_DIR']):
+            os.makedirs(feed['HASH_DIR'])
+        
+        stats.append(process_feed(feed))
+
+    print(stats)
+    writeStats(stats)

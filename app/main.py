@@ -245,6 +245,7 @@ def process_feed(feed):
         
         # Submit the link itself to linkwarden
         page_status = submit_to_linkwarden(entry.link, tags)
+        link_count += 1
         # TODO: DRY this up
         if page_status == 0:
             failure_count += 1

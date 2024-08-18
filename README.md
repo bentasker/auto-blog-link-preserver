@@ -97,6 +97,24 @@ The functions that you need to be aware of are
 * `extract_page_urls(url, xpath_filter)`: consume a HTML page and extract any links found under the path specified in `xpath_filter`
 * `submit_to_linkwarden(url, tags)`: submit a URL to linkwarden, attaching any tags included in the list `tags`
 
+----
+
+## Periodic Duplication
+
+The initial release of this project [required that](https://www.bentasker.co.uk/posts/blog/software-development/automatically-preserving-linked-urls-to-defend-against-link-rot.html#pre_reqs) Linkwarden's duplicate prevention be enabled.
+
+However [utilities/auto-blog-link-preserver#21](https://projects.bentasker.co.uk/gils_projects/issue/utilities/auto-blog-link-preserver/21.html) introduced support for periodic link duplication.
+
+When enabled, the script will submit links that have previously been archived, but only if _enough time has passed since they were last preserved_.
+
+This means that, if there are resources you link to semi-regularly, your Linkwarden archive will be able to show how pages have changed over time.
+
+The functionality is enabled by specifying the minimum number of days between each submission
+```sh
+export PERIODIC_LINK_DUPLICATION_THRESHOLD=90
+```
+
+Note: links will not be refreshed unless they're subsequently seen in a post. This setting is not "refresh every `n` days", it's "allow to be resubmitted after `n` days`.
 
 
 ----

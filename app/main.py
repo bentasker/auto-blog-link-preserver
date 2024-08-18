@@ -24,10 +24,67 @@ import hashlib
 import os
 import requests
 import time
+from datetime import datetime as dt
+from datetime import timedelta
 from lxml import etree
 
 
+def check_result_age(result_list, threshold_days, link, tags):
+    ''' Iterate through a list of linkwarden search results
+    and check
+    
+    * Are they for "link"
+    * Does the collection and tagset match?
+    * Were any created within threshold days of today?
+    
+    We return a boolean
+    
+    The underlying idea is that we're telling duplicate prevention
+    whether the other entries are old enough that we should preserve a
+    new copy
+    '''
+    
+    if not result_list:
+        # We weren't passed a result list so have to search for ourselves
+        result_list = search_linkwarden_link(link)
+    
+    # Make sure the linkwarden collection info is cached
+    if not LINKWARDEN_COLLECTION[0]:
+        # We haven't tried to get collection details yet
+        LINKWARDEN_COLLECTION[0] = True
+        LINKWARDEN_COLLECTION[1] = get_linkwarden_collection(LINKWARDEN_COLLECTION_NAME)    
+    
+    # Calculate the maximum age for a link
+    target_date = dt.now() - timedelta(days=threshold_days)
+    
+    for r in result_list:
+        if r["type"] != "url":
+            continue
+        
+        if r["url"] != link:
+            # It's for a different URL
+            continue
+        
+        if LINKWARDEN_COLLECTION[1] and r["collectionId"] != LINKWARDEN_COLLECTION[1]['id']:
+            # Link is in a different collection
+            continue
+            
+        if not r['lastPreserved']:
+            # There's no date to compare
+            return True
+        
+        d = dt.strptime(r['lastPreserved'], '%Y-%m-%dT%H:%M:%S.%fZ')
+        if d > target_date:
+            # We've got a recent hit, so return that the link has been
+            # archived too recently
+            return False
 
+    # If we got here then either nothing was new enough, or there were no results
+    return True
+        
+    
+    
+    
 def get_linkwarden_collection(name):
     ''' Get details of a linkwarden collection
     '''
@@ -55,6 +112,40 @@ def get_linkwarden_collection(name):
     return False
 
 
+def search_linkwarden_link(link):
+    ''' Search Linkwarden for a link
+    
+    This might find multiple results - we return a list of them
+    '''
+    headers = {
+            "Authorization" : f"Bearer {LINKWARDEN_TOKEN}"
+            }
+
+    params = {
+            "searchQueryString" : link,
+            "searchByUrl" : "true",
+            "searchByName" : "false",
+            "searchByDescription" : "false",
+            "searchByTags" : "false",
+            "searchByTextContent" : "false",
+        }
+    
+    
+    r = SESSION.get(
+            f"{LINKWARDEN_URL}/api/v1/links", 
+            headers=headers,
+            params=params
+        )
+    
+    if r.status_code != 200:
+        # Failed to get anything
+        print(f"Linkwarden failed with code {r.status_code}")
+        return False
+    
+    j = r.json()
+    return j['response']
+    
+    
 def submit_to_linkwarden(link, tags = []):
     ''' Submit a link to LinkWarden via its API
     
@@ -63,6 +154,7 @@ def submit_to_linkwarden(link, tags = []):
       0 - submission failed
       1 - submission succeeded
       2 - LinkWarden reported it was a duplicate link
+      3 - Periodic duplication detected a recent duplicate so did not submit
     
     '''
     
@@ -97,6 +189,12 @@ def submit_to_linkwarden(link, tags = []):
     # Add any that were supplied when calling us
     for tag in tags:
         data["tags"].append({"name":tag})
+    
+    # If periodic link duplication is enabled, we need to check whether the link exists
+    # and whether it was added too recently to be re-added
+    if PERIODIC_LINK_DUPLICATION_THRESHOLD != 0:
+        if not check_result_age(False, PERIODIC_LINK_DUPLICATION_THRESHOLD, link, data['tags']):
+            return 3
     
     headers = {
         "Authorization" : f"Bearer {LINKWARDEN_TOKEN}"
@@ -200,6 +298,7 @@ def process_feed(feed):
     link_count = 0
     failure_count = 0
     duplicate_count = 0
+    too_new = 0
     submit_times = []
     
     # This will be overridden as we iterate through
@@ -251,6 +350,8 @@ def process_feed(feed):
             failure_count += 1
         elif page_status == 2:
             duplicate_count += 1
+        elif page_status == 3:
+            too_new += 1
         
         # Submit the outgoing links
         for link in links:
@@ -262,6 +363,8 @@ def process_feed(feed):
                 failure_count += 1
             elif retcode == 2:
                 duplicate_count += 1
+            elif page_status == 3:
+                too_new += 1
                 
             submit_times.append(time.time_ns() - submit_start)
         
@@ -285,6 +388,7 @@ def process_feed(feed):
             "links" : link_count,
             "duplicates" : duplicate_count,
             "failed_submissions" : failure_count,
+            "too_new" : too_new,
             "runtime": time.time_ns() - start,
         },
         "mean_submission_time": mean_submit_time 
@@ -356,6 +460,9 @@ LINKWARDEN_URL = os.getenv('LINKWARDEN_URL', "https://example.com")
 LINKWARDEN_TOKEN = os.getenv('LINKWARDEN_TOKEN', False)
 LINKWARDEN_TAGS = os.getenv('LINKWARDEN_TAGS' , "SiteLinks").split(",")
 LINKWARDEN_COLLECTION_NAME = os.getenv('LINKWARDEN_COLLECTION_NAME' , "Unorganized")
+
+# Are we allowed to submit duplicates, if so, how long ago must a link have been archived?
+PERIODIC_LINK_DUPLICATION_THRESHOLD = int(os.getenv('PERIODIC_LINK_DUPLICATION_THRESHOLD' , 0))
 MAX_ENTRIES = int(os.getenv('MAX_ENTRIES', 0))
 
 # This is used as a cache and will be updated later
@@ -364,6 +471,24 @@ LINKWARDEN_COLLECTION = [False, False]
 SESSION = requests.session()
 
 if __name__ == '__main__':
+    
+    '''
+    import sys
+    test_links = [
+        "https://www.bentasker.co.uk/posts/blog/software-development/automatically-preserving-linked-urls-to-defend-against-link-rot.html",
+        "NOEXIST"
+        ]
+    
+    for l in test_links:
+        r = search_linkwarden_link(l)
+        should_submit = check_result_age(r, 1, l, [])
+        print(f"Should submit: {should_submit}")
+        
+        # And with an older age threshold
+        should_submit = check_result_age(r, 30, l, [])
+        print(f"Should submit: {should_submit}")        
+    sys.exit()
+    '''
     
     with open(FEEDS_FILE, "r") as fh:
         FEEDS = json.load(fh)

@@ -19,6 +19,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
 
+import json
 import os
 import sys
 import requests
@@ -33,12 +34,34 @@ def usage(args = False):
     s = [f"{sys.argv[0]} [cmd] [opts]",
          "",
          "Commands:",
+         "feeds ls      List configured feeds"
          "submit        Submit a URL (and anything it links to) into Linkwarden",
          "help          Print this help",
          ""
          ]
     print("\n".join(s))
-           
+
+def cmd_feeds(args):
+    ''' List the feeds specified in feeds.json
+    
+    This may be expanded to support more later
+    '''
+    
+    if len(args) > 0 and args[0] != "ls":
+        usage()
+        sys.exit()
+    
+    with open(alr.FEEDS_FILE, "r") as fh:
+        feeds = json.load(fh)
+    
+    print("Configured feeds:")
+    for feed in feeds:
+        print("---")
+        for a in feed:
+            print(f"{a}: {feed[a]}")
+        
+    print("---\n")
+      
 def cmd_submit(args):
     ''' Submit a URL into linkwarden
     
@@ -87,6 +110,7 @@ if __name__ == '__main__':
     # Define the function called by each command    
     commands = {
         "help" : usage,
+        "feeds" : cmd_feeds,
         "submit" : cmd_submit
         }
         

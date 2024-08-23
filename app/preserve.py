@@ -27,32 +27,73 @@ import requests
 sys.path.append(os.path.dirname(__file__))
 import main as alr
 
-url = sys.argv[1]
-submit_statuses = {}
+def usage(args = False):
+    ''' Print usage info
+    '''
+    s = [f"{sys.argv[0]} [cmd] [opts]",
+         "",
+         "Commands:",
+         "submit        Submit a URL (and anything it links to) into Linkwarden",
+         "help          Print this help",
+         ""
+         ]
+    print("\n".join(s))
+           
+def cmd_submit(args):
+    ''' Submit a URL into linkwarden
+    
+    usage: preserve.py submit https://example.com 
+    '''
+    
+    url = args[0]
+    
+    submit_statuses = {}
 
-for i in alr.SUBMIT_STATUS:
-    submit_statuses[i] = 0
+    for i in alr.SUBMIT_STATUS:
+        submit_statuses[i] = 0
 
-# TODO: allow a custom xpath filter to be applied
-# we should also provide a way to reference one that might
-# be recorded against a feed url
-links = alr.extract_page_urls(url, False)
+    # TODO: allow a custom xpath filter to be applied
+    # we should also provide a way to reference one that might
+    # be recorded against a feed url
+    links = alr.extract_page_urls(url, False)
 
-# TODO: do we want to accept tags on the commandline?
-retcode = alr.submit_to_linkwarden(url, [])
-submit_statuses[alr.SUBMIT_STATUS[retcode]] += 1
-print(f"Linkwarden submission reported: {alr.SUBMIT_STATUS[retcode]}")
-
-
-# Iterate through the links
-print("Processing links")
-link_count = 1
-for link in links:
-    link_count += 1
-    retcode = alr.submit_to_linkwarden(link)
+    # TODO: do we want to accept tags on the commandline?
+    retcode = alr.submit_to_linkwarden(url, [])
     submit_statuses[alr.SUBMIT_STATUS[retcode]] += 1
+    print(f"Linkwarden submission reported: {alr.SUBMIT_STATUS[retcode]}")
+
+
+    # Iterate through the links
+    print("Processing links")
+    link_count = 1
+    for link in links:
+        link_count += 1
+        retcode = alr.submit_to_linkwarden(link)
+        submit_statuses[alr.SUBMIT_STATUS[retcode]] += 1
+        
+    print(f"Submitted {link_count} links")
+    for i in submit_statuses:
+        print(f"  {i}: {submit_statuses[i]}")    
     
-print(f"Submitted {link_count} links")
-for i in submit_statuses:
-    print(f"  {i}: {submit_statuses[i]}")
-    
+
+if __name__ == '__main__':
+
+    try:
+        cmd = sys.argv[1]
+    except:
+        usage()
+        sys.exit()
+        
+    # Define the function called by each command    
+    commands = {
+        "help" : usage,
+        "submit" : cmd_submit
+        }
+        
+    # Slice up the extra arguments, if there were any
+    args = []
+    if len(sys.argv) > 2:
+        args = sys.argv[2:]
+
+    # Trigger the command    
+    commands.get(cmd, usage)(args)    

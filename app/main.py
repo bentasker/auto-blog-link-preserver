@@ -29,6 +29,8 @@ from datetime import timedelta
 from lxml import etree
 
 
+SUBMIT_STATUS = ["Failed", "Success", "Duplicate", "Too Recently Preserved"]
+
 def check_result_age(result_list, threshold_days, link, tags):
     ''' Iterate through a list of linkwarden search results
     and check

@@ -176,12 +176,6 @@ def submit_to_linkwarden(link, tags = []):
         "description" : "",
         "type" : "url",
         "tags": [],
-        "preview":"",
-        "image":"",
-        "pdf":"",
-        "readable":"",
-        "monolith":"",
-        "textContent":"",
         "collection": LINKWARDEN_COLLECTION[1]
     }        
     

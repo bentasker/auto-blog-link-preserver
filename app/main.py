@@ -99,6 +99,11 @@ def get_linkwarden_collection(name):
             headers=headers
         )    
     
+    if r.status_code != 200:
+        # Failed to get anything
+        print(f"Linkwarden failed with code {r.status_code}")
+        return False
+
     # Iterate through the response
     j = r.json()
     for c in j['response']:
